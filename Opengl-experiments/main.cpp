@@ -4,6 +4,8 @@
 
 #include <glm/vec3.hpp>
 
+#include "base/pipeline.hpp"
+
 static GLenum glCheckError_(const char* file, int line)
 {
 	GLenum errorCode;
@@ -105,9 +107,7 @@ int main() {
 	glDebugMessageCallback(callback, nullptr);
 
 	/// Programm pipeline
-	GLuint pipeline;
-	glGenProgramPipelines(1, &pipeline);
-	glBindProgramPipeline(pipeline);
+	Pipeline pipeline;
 	/// Shaders code
 
 	const GLchar* vertexShaderSource = "#version 450 core\n"
@@ -136,10 +136,8 @@ int main() {
 
 
 	/// Shaders
-	GLuint frag = glCreateShaderProgramv(GL_FRAGMENT_SHADER, 1, &fragmentShaderSource);
-	glCheckError();
-	GLuint vert = glCreateShaderProgramv(GL_VERTEX_SHADER, 1, &vertexShaderSource);
-	glCheckError();
+	Program vertexProgram(vertexShaderSource, GL_VERTEX_SHADER), fragmentProgram(fragmentShaderSource, GL_FRAGMENT_SHADER);
+
 	GLuint vbo, ibo, vao;
 	/// vbo
 	glCreateBuffers(1, &vbo);
@@ -165,10 +163,9 @@ int main() {
 	glBindVertexArray(vao);
 	glCheckError();
 	/// Use shaders
-	glUseProgramStages(pipeline, GL_VERTEX_SHADER_BIT, vert);
-	glCheckError();
-	glUseProgramStages(pipeline, GL_FRAGMENT_SHADER_BIT, frag);
-	glCheckError();
+	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
+	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
+	pipeline.bind();
 
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
