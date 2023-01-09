@@ -6,7 +6,7 @@
 class VertexArray;
 class BufferBase;
 
-class VertexAttributeBinding {
+class VertexAttributeBinding final {
 public:
 	VertexAttributeBinding(VertexArray* parent, int bindingIndex) noexcept;
 

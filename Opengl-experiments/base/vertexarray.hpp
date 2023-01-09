@@ -8,7 +8,7 @@
 class BufferBase;
 class VertexAttributeBinding;
 
-class VertexArray {
+class VertexArray final {
 public:
 	VertexArray() noexcept;
 	~VertexArray();

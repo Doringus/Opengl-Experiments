@@ -96,12 +96,6 @@ int main() {
 		glm::vec3 color;
 	};
 
-	vertex_t vertices[] = {
-		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
-		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} }
-	};
 	std::array<vertex_t, 4> vertexData = {
 		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
 		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
@@ -109,12 +103,9 @@ int main() {
 		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} }
 	};
 
-	GLuint indices[] = { 
-		0, 1, 3, 
-		1, 2, 3   
-	};
 	std::array<GLuint, 6> ind = { 0, 1, 3,
-								  1, 2, 3 };
+								  1, 2, 3
+	};
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(callback, nullptr);
 
@@ -126,6 +117,7 @@ int main() {
 		"layout (location = 0) in vec3 position;\n"
 		"layout (location = 1) in vec3 color;\n"
 		"layout (location = 0) out vec3 outColor;\n"
+		"layout (location = 3) uniform mat4 modelToWorldMatrix;\n"
 		"out gl_PerVertex\n"
 		"{\n"
         "vec4 gl_Position;\n"
@@ -134,7 +126,7 @@ int main() {
 		"};\n"
 		"void main()\n"
 		"{\n"
-		"gl_Position = vec4(position, 1.0);\n"
+		"gl_Position = modelToWorldMatrix * vec4(position, 1.0);\n"
 		"outColor = color;\n"
 		"}\0";
 
@@ -149,7 +141,6 @@ int main() {
 
 	/// Shaders
 	Program vertexProgram(vertexShaderSource, GL_VERTEX_SHADER), fragmentProgram(fragmentShaderSource, GL_FRAGMENT_SHADER);
-
 	/// vbo
 	BufferBase vertexBuffer;
 	vertexBuffer.setData(vertexData, GL_STATIC_DRAW);
@@ -177,6 +168,9 @@ int main() {
 	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
 	pipeline.bind();
 
+	glm::mat4 matrix(1.0f);
+	vertexProgram.setUniform(std::string("modelToWorldMatrix\0"), matrix);
+		
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glCheckError();
