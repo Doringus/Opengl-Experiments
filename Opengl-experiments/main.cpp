@@ -5,6 +5,11 @@
 #include <glm/vec3.hpp>
 
 #include "base/pipeline.hpp"
+#include "base/bufferbase.hpp"
+#include "base/vertexarray.hpp"
+#include "base/vertexattributebinding.hpp"
+
+#include <array>
 
 static GLenum glCheckError_(const char* file, int line)
 {
@@ -97,12 +102,19 @@ int main() {
 		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
 		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} }
 	};
+	std::array<vertex_t, 4> vertexData = {
+		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
+		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
+		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} }
+	};
 
 	GLuint indices[] = { 
 		0, 1, 3, 
 		1, 2, 3   
 	};
-
+	std::array<GLuint, 6> ind = { 0, 1, 3,
+								  1, 2, 3 };
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(callback, nullptr);
 
@@ -138,29 +150,27 @@ int main() {
 	/// Shaders
 	Program vertexProgram(vertexShaderSource, GL_VERTEX_SHADER), fragmentProgram(fragmentShaderSource, GL_FRAGMENT_SHADER);
 
-	GLuint vbo, ibo, vao;
 	/// vbo
-	glCreateBuffers(1, &vbo);
-	glNamedBufferData(vbo, sizeof(vertex_t) * 4, vertices, GL_STATIC_DRAW);
+	BufferBase vertexBuffer;
+	vertexBuffer.setData(vertexData, GL_STATIC_DRAW);
 	// ibo
-	glCreateBuffers(1, &ibo);
-	glNamedBufferData(ibo, sizeof(GLuint) * 6, indices, GL_STATIC_DRAW);
+	BufferBase elementsBuffer;
+	elementsBuffer.setData(ind, GL_STATIC_DRAW);
 	/// vao
-	glCreateVertexArrays(1, &vao);
-	glEnableVertexArrayAttrib(vao, 0);
-	glVertexArrayAttribBinding(vao, 0, 0);
-	glVertexArrayAttribFormat(vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, position));
+	VertexArray vertexArray;
+	vertexArray.binding(0)->enableAttribute(0);
+	vertexArray.binding(0)->bindAttribute(0);
+	vertexArray.binding(0)->setFormat(0, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, position));
 
-	glEnableVertexArrayAttrib(vao, 1);
-	glVertexArrayAttribBinding(vao, 1, 0);
-	glVertexArrayAttribFormat(vao, 1, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, color));
+	vertexArray.binding(0)->enableAttribute(1);
+	vertexArray.binding(0)->bindAttribute(1);
+	vertexArray.binding(0)->setFormat(1 ,3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, color));
 
 	/// bind vbo, ibo
-	glVertexArrayVertexBuffer(vao, 0, vbo, 0, sizeof(vertex_t));
-	glVertexArrayElementBuffer(vao, ibo);
-
+	vertexArray.binding(0)->bindBuffer(vertexBuffer, 0, sizeof(vertex_t));
+	vertexArray.binding(0)->bindElementBuffer(elementsBuffer);
 	/// bind vao
-	glBindVertexArray(vao);
+	vertexArray.bind();
 	glCheckError();
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
@@ -176,8 +186,6 @@ int main() {
 		glCheckError();
 		glfwSwapBuffers(window);
 	}
-
-
 
 	return 0;
 }
