@@ -9,6 +9,7 @@
 #include "base/vertexarray.hpp"
 #include "base/vertexattributebinding.hpp"
 #include "base/texture2d.hpp"
+#include "base/arraytexture.hpp"
 
 #include <array>
 #include <stb_image.h>
@@ -142,11 +143,11 @@ int main() {
 	const GLchar* fragmentShaderSource = "#version 450 core\n"
 		"layout (location = 0) in vec3 inColor;\n"
 		"layout (location = 1) in vec2 textureCoord;\n"
-		"layout (binding = 0) uniform sampler2D textureSampler;\n"
+		"layout (binding = 0) uniform sampler2DArray textureSampler;\n"
 		"out vec4 color;\n"
 		"void main()\n"
 		"{\n"
-		"color = texture(textureSampler, textureCoord) * vec4(inColor, 1.0f);\n"
+		"color = mix(texture(textureSampler, vec3(textureCoord, 0)), texture(textureSampler, vec3(textureCoord, 1)), 0.2) * vec4(inColor, 1.0f);\n"
 		"}\n\0";
 
 
@@ -191,7 +192,11 @@ int main() {
 	vertexArray.bind();
 
 	/// Texture
-	Texture2d texture(TextureResource(std::filesystem::absolute("res/textures/wall.png"), 4), GL_RGBA32F);
+	TextureResource wall(std::filesystem::absolute("res/textures/wall.png"), 4);
+	Texture2d texture(wall, GL_RGBA32F);
+	// Array texture
+	TextureResource face(std::filesystem::absolute("res/textures/face.png"), 4);
+	ArrayTexture arrayTexture({ wall, face }, 1920, 1080, GL_RGBA32F);
 
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
@@ -201,7 +206,8 @@ int main() {
 	glm::mat4 matrix(1.0f);
 	vertexProgram.setUniform(std::string("modelToWorldMatrix\0"), matrix);
 	/// Use texture
-	texture.bind(0);
+	//texture.bind(0);
+	arrayTexture.bind(0);
 
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
