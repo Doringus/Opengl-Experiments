@@ -25,6 +25,5 @@ private:
 
 template <>
 inline void Program::setUniform<glm::mat4>(const std::string& name, const glm::mat4& uniform) {
-	int k = m_UniformLocations[name];
 	glProgramUniformMatrix4fv(m_Handle, m_UniformLocations[name], 1, GL_FALSE, glm::value_ptr(uniform));
 }

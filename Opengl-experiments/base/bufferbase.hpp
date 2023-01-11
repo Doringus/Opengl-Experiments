@@ -20,7 +20,7 @@ public:
 
 	template <StlCompatible T>
 	void setData(T&& data, GLenum usage) noexcept {
-		glNamedBufferData(m_Handle, data.size() * sizeof(T), data.data(), usage);
+		glNamedBufferData(m_Handle, data.size() * sizeof(std::decay_t<T>::value_type), data.data(), usage);
 	}
 
 protected:

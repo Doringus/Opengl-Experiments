@@ -8,8 +8,12 @@
 #include "base/bufferbase.hpp"
 #include "base/vertexarray.hpp"
 #include "base/vertexattributebinding.hpp"
+#include "base/texture2d.hpp"
 
 #include <array>
+#include <stb_image.h>
+
+#include "base/textureresource.hpp"
 
 static GLenum glCheckError_(const char* file, int line)
 {
@@ -76,6 +80,7 @@ void callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
 }
 
 int main() {
+	stbi_set_flip_vertically_on_load(1);
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -94,13 +99,14 @@ int main() {
 	struct vertex_t {
 		glm::vec3 position;
 		glm::vec3 color;
+		glm::vec2 uv;
 	};
 
 	std::array<vertex_t, 4> vertexData = {
-		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f} },
-		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f} },
-		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} },
-		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f} }
+		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
+		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
+		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
+		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} }
 	};
 
 	std::array<GLuint, 6> ind = { 0, 1, 3,
@@ -116,31 +122,47 @@ int main() {
 	const GLchar* vertexShaderSource = "#version 450 core\n"
 		"layout (location = 0) in vec3 position;\n"
 		"layout (location = 1) in vec3 color;\n"
+		"layout (location = 2) in vec2 texCoord;\n"
 		"layout (location = 0) out vec3 outColor;\n"
+		"layout (location = 1) out vec2 outTexCoord;\n"
 		"layout (location = 3) uniform mat4 modelToWorldMatrix;\n"
 		"out gl_PerVertex\n"
 		"{\n"
-        "vec4 gl_Position;\n"
-        "float gl_PointSize;\n"
-        "float gl_ClipDistance[];\n"
+		"vec4 gl_Position;\n"
+		"float gl_PointSize;\n"
+		"float gl_ClipDistance[];\n"
 		"};\n"
 		"void main()\n"
 		"{\n"
 		"gl_Position = modelToWorldMatrix * vec4(position, 1.0);\n"
 		"outColor = color;\n"
-		"}\0";
+		"outTexCoord = texCoord;\n"
+		"}\n\0";
 
 	const GLchar* fragmentShaderSource = "#version 450 core\n"
 		"layout (location = 0) in vec3 inColor;\n"
+		"layout (location = 1) in vec2 textureCoord;\n"
+		"layout (binding = 0) uniform sampler2D textureSampler;\n"
 		"out vec4 color;\n"
 		"void main()\n"
 		"{\n"
-		"color = vec4(inColor, 1.0f);\n"
+		"color = texture(textureSampler, textureCoord) * vec4(inColor, 1.0f);\n"
 		"}\n\0";
 
 
 	/// Shaders
 	Program vertexProgram(vertexShaderSource, GL_VERTEX_SHADER), fragmentProgram(fragmentShaderSource, GL_FRAGMENT_SHADER);
+	GLint isLinked = 0;
+	glGetProgramiv(vertexProgram.getHandle(), GL_LINK_STATUS, &isLinked);
+	if (isLinked == GL_FALSE)
+	{
+		GLint maxLength = 0;
+		glGetProgramiv(vertexProgram.getHandle(), GL_INFO_LOG_LENGTH, &maxLength);
+
+		// The maxLength includes the NULL character
+		std::vector<GLchar> infoLog(maxLength);
+		glGetProgramInfoLog(vertexProgram.getHandle(), maxLength, &maxLength, &infoLog[0]);
+	}
 	/// vbo
 	BufferBase vertexBuffer;
 	vertexBuffer.setData(vertexData, GL_STATIC_DRAW);
@@ -149,20 +171,28 @@ int main() {
 	elementsBuffer.setData(ind, GL_STATIC_DRAW);
 	/// vao
 	VertexArray vertexArray;
+	// Position
 	vertexArray.binding(0)->enableAttribute(0);
 	vertexArray.binding(0)->bindAttribute(0);
 	vertexArray.binding(0)->setFormat(0, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, position));
-
+	// Color
 	vertexArray.binding(0)->enableAttribute(1);
 	vertexArray.binding(0)->bindAttribute(1);
 	vertexArray.binding(0)->setFormat(1 ,3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, color));
+	// Texture
+	vertexArray.binding(0)->enableAttribute(2);
+	vertexArray.binding(0)->bindAttribute(2);
+	vertexArray.binding(0)->setFormat(2, 2, GL_FLOAT, GL_FALSE, offsetof(vertex_t, uv));
 
 	/// bind vbo, ibo
 	vertexArray.binding(0)->bindBuffer(vertexBuffer, 0, sizeof(vertex_t));
 	vertexArray.binding(0)->bindElementBuffer(elementsBuffer);
 	/// bind vao
 	vertexArray.bind();
-	glCheckError();
+
+	/// Texture
+	Texture2d texture(TextureResource(std::filesystem::absolute("res/textures/wall.png"), 4), GL_RGBA32F);
+
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
 	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
@@ -170,7 +200,9 @@ int main() {
 
 	glm::mat4 matrix(1.0f);
 	vertexProgram.setUniform(std::string("modelToWorldMatrix\0"), matrix);
-		
+	/// Use texture
+	texture.bind(0);
+
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glCheckError();
