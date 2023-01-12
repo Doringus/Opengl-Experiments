@@ -10,6 +10,7 @@
 #include "base/vertexattributebinding.hpp"
 #include "base/texture2d.hpp"
 #include "base/arraytexture.hpp"
+#include "base/bindlesstexture.hpp"
 
 #include <array>
 #include <stb_image.h>
@@ -141,13 +142,16 @@ int main() {
 		"}\n\0";
 
 	const GLchar* fragmentShaderSource = "#version 450 core\n"
+		"#extension GL_ARB_bindless_texture : require\n"
 		"layout (location = 0) in vec3 inColor;\n"
 		"layout (location = 1) in vec2 textureCoord;\n"
-		"layout (binding = 0) uniform sampler2DArray textureSampler;\n"
+	//	"layout (binding = 0) uniform sampler2DArray textureSampler;\n"
+		"layout(bindless_sampler) uniform sampler2D textureSampler;\n"
 		"out vec4 color;\n"
 		"void main()\n"
 		"{\n"
-		"color = mix(texture(textureSampler, vec3(textureCoord, 0)), texture(textureSampler, vec3(textureCoord, 1)), 0.2) * vec4(inColor, 1.0f);\n"
+		"color = texture(textureSampler, textureCoord) * vec4(inColor, 1.0f);"
+	//	"color = mix(texture(textureSampler, vec3(textureCoord, 0)), texture(textureSampler, vec3(textureCoord, 1)), 0.2) * vec4(inColor, 1.0f);\n"
 		"}\n\0";
 
 
@@ -197,6 +201,8 @@ int main() {
 	// Array texture
 	TextureResource face(std::filesystem::absolute("res/textures/face.png"), 4);
 	ArrayTexture arrayTexture({ wall, face }, 1920, 1080, GL_RGBA32F);
+	// Bindless texture
+	BindlessTexture bindlessTexture(wall, GL_RGBA32F);
 
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
@@ -207,7 +213,9 @@ int main() {
 	vertexProgram.setUniform(std::string("modelToWorldMatrix\0"), matrix);
 	/// Use texture
 	//texture.bind(0);
-	arrayTexture.bind(0);
+	//arrayTexture.bind(0);
+	bindlessTexture.getBindlessHandle().makeResident();
+	fragmentProgram.setUniform("textureSampler", bindlessTexture.getBindlessHandle().getHandle());
 
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
