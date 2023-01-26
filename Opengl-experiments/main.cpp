@@ -12,6 +12,8 @@
 #include "base/arraytexture.hpp"
 #include "base/bindlesstexture.hpp"
 
+#include "utils/fileloader.hpp"
+
 #include <array>
 #include <stb_image.h>
 
@@ -119,44 +121,11 @@ int main() {
 
 	/// Programm pipeline
 	Pipeline pipeline;
-	/// Shaders code
-
-	const GLchar* vertexShaderSource = "#version 450 core\n"
-		"layout (location = 0) in vec3 position;\n"
-		"layout (location = 1) in vec3 color;\n"
-		"layout (location = 2) in vec2 texCoord;\n"
-		"layout (location = 0) out vec3 outColor;\n"
-		"layout (location = 1) out vec2 outTexCoord;\n"
-		"layout (location = 3) uniform mat4 modelToWorldMatrix;\n"
-		"out gl_PerVertex\n"
-		"{\n"
-		"vec4 gl_Position;\n"
-		"float gl_PointSize;\n"
-		"float gl_ClipDistance[];\n"
-		"};\n"
-		"void main()\n"
-		"{\n"
-		"gl_Position = modelToWorldMatrix * vec4(position, 1.0);\n"
-		"outColor = color;\n"
-		"outTexCoord = texCoord;\n"
-		"}\n\0";
-
-	const GLchar* fragmentShaderSource = "#version 450 core\n"
-		"#extension GL_ARB_bindless_texture : require\n"
-		"layout (location = 0) in vec3 inColor;\n"
-		"layout (location = 1) in vec2 textureCoord;\n"
-	//	"layout (binding = 0) uniform sampler2DArray textureSampler;\n"
-		"layout(bindless_sampler) uniform sampler2D textureSampler;\n"
-		"out vec4 color;\n"
-		"void main()\n"
-		"{\n"
-		"color = texture(textureSampler, textureCoord) * vec4(inColor, 1.0f);"
-	//	"color = mix(texture(textureSampler, vec3(textureCoord, 0)), texture(textureSampler, vec3(textureCoord, 1)), 0.2) * vec4(inColor, 1.0f);\n"
-		"}\n\0";
-
-
+	
 	/// Shaders
-	Program vertexProgram(vertexShaderSource, GL_VERTEX_SHADER), fragmentProgram(fragmentShaderSource, GL_FRAGMENT_SHADER);
+	auto vertexShader = readFile(std::filesystem::absolute("res/shaders/basicVertexShader.vert"));
+	auto fragmentShader = readFile(std::filesystem::absolute("res/shaders/basicFragmentShader.frag"));
+	Program vertexProgram(vertexShader.c_str(), GL_VERTEX_SHADER), fragmentProgram(fragmentShader.c_str(), GL_FRAGMENT_SHADER);
 	GLint isLinked = 0;
 	glGetProgramiv(vertexProgram.getHandle(), GL_LINK_STATUS, &isLinked);
 	if (isLinked == GL_FALSE)
