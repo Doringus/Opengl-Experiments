@@ -32,3 +32,13 @@ template <>
 inline void Program::setUniform<GLuint64>(const std::string& name, const GLuint64& uniform) {
 	glProgramUniformHandleui64ARB(m_Handle, m_UniformLocations[name], uniform);
 }
+
+template <>
+inline void Program::setUniform<glm::vec3>(const std::string& name, const glm::vec3& uniform) {
+	glProgramUniform3fv(m_Handle, m_UniformLocations[name], 1, glm::value_ptr(uniform));
+}
+
+template <>
+inline void Program::setUniform<GLint>(const std::string& name, const GLint& uniform) {
+	glProgramUniform1i(m_Handle, m_UniformLocations[name], uniform);
+}

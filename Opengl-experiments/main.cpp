@@ -13,34 +13,16 @@
 #include "base/bindlesstexture.hpp"
 
 #include "utils/fileloader.hpp"
+#include "utils/input.hpp"
+
+#include "scene/scenenode.hpp"
+#include "scene/scene.hpp"
+#include "scene/camera.hpp"
 
 #include <array>
 #include <stb_image.h>
 
 #include "base/textureresource.hpp"
-
-static GLenum glCheckError_(const char* file, int line)
-{
-	GLenum errorCode;
-	while ((errorCode = glGetError()) != GL_NO_ERROR)
-	{
-		std::string error;
-		switch (errorCode)
-		{
-		case GL_INVALID_ENUM:                  error = "INVALID_ENUM"; break;
-		case GL_INVALID_VALUE:                 error = "INVALID_VALUE"; break;
-		case GL_INVALID_OPERATION:             error = "INVALID_OPERATION"; break;
-		case GL_STACK_OVERFLOW:                error = "STACK_OVERFLOW"; break;
-		case GL_STACK_UNDERFLOW:               error = "STACK_UNDERFLOW"; break;
-		case GL_OUT_OF_MEMORY:                 error = "OUT_OF_MEMORY"; break;
-		case GL_INVALID_FRAMEBUFFER_OPERATION: error = "INVALID_FRAMEBUFFER_OPERATION"; break;
-		}
-		spdlog::error("{0} | {1} ({2})", error, file, line);
-	}
-	return errorCode;
-}
-
-#define glCheckError() glCheckError_(__FILE__, __LINE__) 
 
 void callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, GLchar const* message, void const* user_param)
 {
@@ -83,6 +65,44 @@ void callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
 	spdlog::info("{0} | {1} ({2})", severity_str, type_str, message);
 }
 
+/// TODO: add frame time
+void updateCameraNode(SceneNode* cameraNode, Camera* camera, GLFWwindow* window) {
+	constexpr float speed = 0.3f;
+	auto position = cameraNode->getTransform().worldPosition;
+	auto& cameraFront = camera->getFrontVec();
+	auto& cameraUp = camera->getUpVec();
+
+	if (Input::get().isKeyPressed(GLFW_KEY_W)) {
+		position += speed * cameraFront;
+	}
+	if (Input::get().isKeyPressed(GLFW_KEY_S)) {
+		position -= speed * cameraFront;
+	}
+	if (Input::get().isKeyPressed(GLFW_KEY_A)) {
+		position -= glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
+	}
+	if (Input::get().isKeyPressed(GLFW_KEY_D)) {
+		position += glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
+	}
+	cameraNode->setPosition(position);
+	/* Rotate camera */
+	const auto currentPosition = Input::get().getCurrentFrameMousePosition();
+	const auto prevPosition = Input::get().getPreviousFrameMousePosition();
+	double offsetX = currentPosition.x - prevPosition.x;
+	double offsetY = currentPosition.y - prevPosition.y;
+	offsetX *= speed;
+	offsetY *= speed;
+	cameraNode->getTransform().yaw += offsetX;
+	cameraNode->getTransform().pitch -= offsetY;
+	if (cameraNode->getTransform().pitch > 89.0f) {
+		cameraNode->getTransform().pitch = 89.0f;
+	}
+	if (cameraNode->getTransform().pitch < -89.0f) {
+		cameraNode->getTransform().pitch = -89.0f;
+	}
+	camera->update();
+}
+
 int main() {
 	stbi_set_flip_vertically_on_load(1);
 	glfwInit();
@@ -104,13 +124,14 @@ int main() {
 		glm::vec3 position;
 		glm::vec3 color;
 		glm::vec2 uv;
+	//	glm::vec3 normal;
 	};
 
 	std::array<vertex_t, 4> vertexData = {
-		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f} },
-		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f} },
-		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f} },
-		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f} }
+		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, /*{0.0f, 0.0f, 1.0f}*/},
+		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, /*{0.0f, 0.0f, 1.0f}*/ },
+		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, /*{0.0f, 0.0f, 1.0f}*/ },
+		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}, /*{0.0f, 0.0f, 1.0f}*/ }
 	};
 
 	std::array<GLuint, 6> ind = { 0, 1, 3,
@@ -119,24 +140,13 @@ int main() {
 	glEnable(GL_DEBUG_OUTPUT);
 	glDebugMessageCallback(callback, nullptr);
 
-	/// Programm pipeline
+	/// Program pipeline
 	Pipeline pipeline;
 	
 	/// Shaders
 	auto vertexShader = readFile(std::filesystem::absolute("res/shaders/basicVertexShader.vert"));
 	auto fragmentShader = readFile(std::filesystem::absolute("res/shaders/basicFragmentShader.frag"));
 	Program vertexProgram(vertexShader.c_str(), GL_VERTEX_SHADER), fragmentProgram(fragmentShader.c_str(), GL_FRAGMENT_SHADER);
-	GLint isLinked = 0;
-	glGetProgramiv(vertexProgram.getHandle(), GL_LINK_STATUS, &isLinked);
-	if (isLinked == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetProgramiv(vertexProgram.getHandle(), GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<GLchar> infoLog(maxLength);
-		glGetProgramInfoLog(vertexProgram.getHandle(), maxLength, &maxLength, &infoLog[0]);
-	}
 	/// vbo
 	BufferBase vertexBuffer;
 	vertexBuffer.setData(vertexData, GL_STATIC_DRAW);
@@ -157,6 +167,10 @@ int main() {
 	vertexArray.binding(0)->enableAttribute(2);
 	vertexArray.binding(0)->bindAttribute(2);
 	vertexArray.binding(0)->setFormat(2, 2, GL_FLOAT, GL_FALSE, offsetof(vertex_t, uv));
+	// Normal
+//	vertexArray.binding(0)->enableAttribute(3);
+//	vertexArray.binding(0)->bindAttribute(3);
+//	vertexArray.binding(0)->setFormat(3, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, normal));
 
 	/// bind vbo, ibo
 	vertexArray.binding(0)->bindBuffer(vertexBuffer, 0, sizeof(vertex_t));
@@ -168,31 +182,43 @@ int main() {
 	TextureResource wall(std::filesystem::absolute("res/textures/wall.png"), 4);
 	Texture2d texture(wall, GL_RGBA32F);
 	// Array texture
-	TextureResource face(std::filesystem::absolute("res/textures/face.png"), 4);
-	ArrayTexture arrayTexture({ wall, face }, 1920, 1080, GL_RGBA32F);
+//	TextureResource face(std::filesystem::absolute("res/textures/face.png"), 4);
+//	ArrayTexture arrayTexture({ wall, face }, 1920, 1080, GL_RGBA32F);
 	// Bindless texture
-	BindlessTexture bindlessTexture(wall, GL_RGBA32F);
+//	BindlessTexture bindlessTexture(wall, GL_RGBA32F);
 
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
 	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
 	pipeline.bind();
 
-	glm::mat4 matrix(1.0f);
-	vertexProgram.setUniform(std::string("modelToWorldMatrix\0"), matrix);
+	
 	/// Use texture
 	//texture.bind(0);
 	//arrayTexture.bind(0);
-	bindlessTexture.getBindlessHandle().makeResident();
-	fragmentProgram.setUniform("textureSampler", bindlessTexture.getBindlessHandle().getHandle());
+	//bindlessTexture.getBindlessHandle().makeResident();
+	//fragmentProgram.setUniform("textureSampler", bindlessTexture.getBindlessHandle().getHandle());
+	fragmentProgram.setUniform("textureSampler", 0);
+	/// Test ambient light
+	fragmentProgram.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
 
+	/// Scene
+	Scene scene;
+	auto cameraNode = scene.getRootNode().createChild();
+	auto camera = std::make_unique<Camera>(cameraNode, glm::perspective(45.0f, 640.f / 480.f,
+		0.1f, 500.0f));
+	cameraNode->attachGameObject(camera.get());
+	texture.bind(0);
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glCheckError();
+		/// Input
 		glfwPollEvents();
+		Input::get().processInput(window);
+		/// Update
+		updateCameraNode(cameraNode, camera.get(), window);
 		/// Draw
+		vertexProgram.setUniform(std::string("modelToWorldMatrix"), camera->calculateCameraMatrix());
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-		glCheckError();
 		glfwSwapBuffers(window);
 	}
 
