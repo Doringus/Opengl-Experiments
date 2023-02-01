@@ -3,14 +3,17 @@
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 color;
 layout (location = 2) in vec2 texCoord;
-//layout (location = 3) in vec3 normal;
+layout (location = 3) in vec3 normal;
 
 layout (location = 0) out vec3 outColor;
 layout (location = 1) out vec2 outTexCoord;
-//layout (location = 2) out vec3 outNormal;
-//layout (location = 3) out vec3 outFragmentPosition;
+layout (location = 2) out vec3 outNormal;
+layout (location = 3) out vec3 outPosition;
 
-layout (location = 3) uniform mat4 modelToWorldMatrix;
+layout (location = 0) uniform mat4 MVP;
+layout (location = 1) uniform mat4 modelViewMatrix;
+layout (location = 2) uniform mat3 normalMatrix;
+
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -20,9 +23,9 @@ out gl_PerVertex {
 
 
 void main() {
-    gl_Position = modelToWorldMatrix * vec4(position, 1.0);
+    gl_Position = MVP * vec4(position, 1.0);
     outColor = color;
     outTexCoord = texCoord;
- //   outNormal = normal;
-   // outFragmentPosition = vec3()
+    outNormal = normalize(normalMatrix * normal); // calc n in view space
+    outPosition = vec3(modelViewMatrix * vec4(position, 1.0));
 }

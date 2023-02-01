@@ -29,6 +29,12 @@ inline void Program::setUniform<glm::mat4>(const std::string& name, const glm::m
 }
 
 template <>
+inline void Program::setUniform<glm::mat3>(const std::string& name, const glm::mat3& uniform) {
+	glProgramUniformMatrix3fv(m_Handle, m_UniformLocations[name], 1, GL_FALSE, glm::value_ptr(uniform));
+}
+
+
+template <>
 inline void Program::setUniform<GLuint64>(const std::string& name, const GLuint64& uniform) {
 	glProgramUniformHandleui64ARB(m_Handle, m_UniformLocations[name], uniform);
 }

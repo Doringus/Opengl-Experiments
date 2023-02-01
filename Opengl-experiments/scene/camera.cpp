@@ -5,8 +5,9 @@
 #include "scenenode.hpp"
 
 Camera::Camera(SceneNode* parent, const glm::mat4 projectionMatrix) noexcept
-	: GameObject(parent), m_ProjectionMatrix(projectionMatrix), m_Up(0.f, 1.f, 0.f), m_Front(0.f, 0.f, 1.f) {
-	
+	: GameObject(parent), m_ProjectionMatrix(projectionMatrix),  m_Up(0.f, 1.f, 0.f), m_Front(0.f, 0.f, 1.f) {
+	const glm::vec3 position = m_Parent->getTransform().worldPosition;
+	m_ViewMatrix = glm::lookAt(position, position + m_Front, m_Up);
 }
 
 glm::mat4 Camera::calculateCameraMatrix() const noexcept {

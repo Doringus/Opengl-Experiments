@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 
 #include <glm/vec3.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
 
 #include "base/pipeline.hpp"
 #include "base/bufferbase.hpp"
@@ -67,7 +68,7 @@ void callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
 
 /// TODO: add frame time
 void updateCameraNode(SceneNode* cameraNode, Camera* camera, GLFWwindow* window) {
-	constexpr float speed = 0.3f;
+	constexpr float speed = 0.15f;
 	auto position = cameraNode->getTransform().worldPosition;
 	auto& cameraFront = camera->getFrontVec();
 	auto& cameraUp = camera->getUpVec();
@@ -124,14 +125,14 @@ int main() {
 		glm::vec3 position;
 		glm::vec3 color;
 		glm::vec2 uv;
-	//	glm::vec3 normal;
+		glm::vec3 normal;
 	};
 
 	std::array<vertex_t, 4> vertexData = {
-		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, /*{0.0f, 0.0f, 1.0f}*/},
-		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, /*{0.0f, 0.0f, 1.0f}*/ },
-		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, /*{0.0f, 0.0f, 1.0f}*/ },
-		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}, /*{0.0f, 0.0f, 1.0f}*/ }
+		vertex_t { {0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}},
+		vertex_t { {0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+		vertex_t { {-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {0.0f, 0.0f, 1.0f} },
+		vertex_t { {-0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}, {0.0f, 0.0f, 1.0f} }
 	};
 
 	std::array<GLuint, 6> ind = { 0, 1, 3,
@@ -168,9 +169,9 @@ int main() {
 	vertexArray.binding(0)->bindAttribute(2);
 	vertexArray.binding(0)->setFormat(2, 2, GL_FLOAT, GL_FALSE, offsetof(vertex_t, uv));
 	// Normal
-//	vertexArray.binding(0)->enableAttribute(3);
-//	vertexArray.binding(0)->bindAttribute(3);
-//	vertexArray.binding(0)->setFormat(3, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, normal));
+	vertexArray.binding(0)->enableAttribute(3);
+	vertexArray.binding(0)->bindAttribute(3);
+	vertexArray.binding(0)->setFormat(3, 3, GL_FLOAT, GL_FALSE, offsetof(vertex_t, normal));
 
 	/// bind vbo, ibo
 	vertexArray.binding(0)->bindBuffer(vertexBuffer, 0, sizeof(vertex_t));
@@ -201,13 +202,22 @@ int main() {
 	fragmentProgram.setUniform("textureSampler", 0);
 	/// Test ambient light
 	fragmentProgram.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
-
 	/// Scene
 	Scene scene;
 	auto cameraNode = scene.getRootNode().createChild();
+	cameraNode->setPosition({0.0, 0.0, -1.0});
 	auto camera = std::make_unique<Camera>(cameraNode, glm::perspective(45.0f, 640.f / 480.f,
 		0.1f, 500.0f));
 	cameraNode->attachGameObject(camera.get());
+
+	// set matrices to shaders
+	// TODO: add model matrix multiplication
+	
+	glm::mat4 modelViewMatrix = camera->getViewMatrix() * glm::mat4(1.0);
+	glm::mat3 modelViewMatrix3 = glm::mat3(modelViewMatrix);
+	glm::mat3 normalMatrix = glm::inverseTranspose(modelViewMatrix3);
+	vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
+
 	texture.bind(0);
 	while(!glfwWindowShouldClose(window)) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -217,7 +227,10 @@ int main() {
 		/// Update
 		updateCameraNode(cameraNode, camera.get(), window);
 		/// Draw
-		vertexProgram.setUniform(std::string("modelToWorldMatrix"), camera->calculateCameraMatrix());
+		// TODO: add model matrix
+		vertexProgram.setUniform(std::string("MVP"), camera->calculateCameraMatrix() * glm::mat4(1.0f));
+		vertexProgram.setUniform(std::string("modelViewMatrix"), modelViewMatrix);
+		fragmentProgram.setUniform(std::string("cameraPosition"), cameraNode->getTransform().worldPosition);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		glfwSwapBuffers(window);
 	}
