@@ -6,7 +6,7 @@
 
 class Camera final : public GameObject {
 public:
-	Camera(SceneNode* parent, const glm::mat4 projectionMatrix) noexcept;
+	Camera(const glm::mat4& projectionMatrix) noexcept;
 
 	glm::mat4 calculateCameraMatrix() const noexcept;
 	const glm::mat4& getViewMatrix() const noexcept;

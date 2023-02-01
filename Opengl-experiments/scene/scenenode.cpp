@@ -13,6 +13,7 @@ SceneNode* SceneNode::createChild() noexcept {
 
 void SceneNode::attachGameObject(GameObject* gameObject) noexcept {
 	m_Object = gameObject;
+	m_Object->setParent(this);
 }
 
 void SceneNode::setPosition(const glm::vec3& position) noexcept {

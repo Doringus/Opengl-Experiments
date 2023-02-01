@@ -182,23 +182,12 @@ int main() {
 	/// Texture
 	TextureResource wall(std::filesystem::absolute("res/textures/wall.png"), 4);
 	Texture2d texture(wall, GL_RGBA32F);
-	// Array texture
-//	TextureResource face(std::filesystem::absolute("res/textures/face.png"), 4);
-//	ArrayTexture arrayTexture({ wall, face }, 1920, 1080, GL_RGBA32F);
-	// Bindless texture
-//	BindlessTexture bindlessTexture(wall, GL_RGBA32F);
 
 	/// Use shaders
 	pipeline.useProgramStage(GL_VERTEX_SHADER_BIT, vertexProgram);
 	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
 	pipeline.bind();
 
-	
-	/// Use texture
-	//texture.bind(0);
-	//arrayTexture.bind(0);
-	//bindlessTexture.getBindlessHandle().makeResident();
-	//fragmentProgram.setUniform("textureSampler", bindlessTexture.getBindlessHandle().getHandle());
 	fragmentProgram.setUniform("textureSampler", 0);
 	/// Test ambient light
 	fragmentProgram.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
@@ -206,17 +195,10 @@ int main() {
 	Scene scene;
 	auto cameraNode = scene.getRootNode().createChild();
 	cameraNode->setPosition({0.0, 0.0, -1.0});
-	auto camera = std::make_unique<Camera>(cameraNode, glm::perspective(45.0f, 640.f / 480.f,
+	auto camera = std::make_unique<Camera>(glm::perspective(45.0f, 640.f / 480.f,
 		0.1f, 500.0f));
 	cameraNode->attachGameObject(camera.get());
 
-	// set matrices to shaders
-	// TODO: add model matrix multiplication
-	
-	glm::mat4 modelViewMatrix = camera->getViewMatrix() * glm::mat4(1.0);
-	glm::mat3 modelViewMatrix3 = glm::mat3(modelViewMatrix);
-	glm::mat3 normalMatrix = glm::inverseTranspose(modelViewMatrix3);
-	vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
 
 	texture.bind(0);
 	while(!glfwWindowShouldClose(window)) {
@@ -227,7 +209,12 @@ int main() {
 		/// Update
 		updateCameraNode(cameraNode, camera.get(), window);
 		/// Draw
-		// TODO: add model matrix
+		// set matrices to shaders
+		// TODO: add model matrix multiplication
+		glm::mat4 modelViewMatrix = camera->getViewMatrix() * glm::mat4(1.0);
+		glm::mat3 modelViewMatrix3 = glm::mat3(modelViewMatrix);
+		glm::mat3 normalMatrix = glm::inverseTranspose(modelViewMatrix3);
+		vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
 		vertexProgram.setUniform(std::string("MVP"), camera->calculateCameraMatrix() * glm::mat4(1.0f));
 		vertexProgram.setUniform(std::string("modelViewMatrix"), modelViewMatrix);
 		fragmentProgram.setUniform(std::string("cameraPosition"), cameraNode->getTransform().worldPosition);
