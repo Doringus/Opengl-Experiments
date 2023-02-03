@@ -48,3 +48,8 @@ template <>
 inline void Program::setUniform<GLint>(const std::string& name, const GLint& uniform) {
 	glProgramUniform1i(m_Handle, m_UniformLocations[name], uniform);
 }
+
+template <>
+inline void Program::setUniform<GLfloat>(const std::string& name, const GLfloat& uniform) {
+	glProgramUniform1f(m_Handle, m_UniformLocations[name], uniform);
+}

@@ -104,6 +104,22 @@ void updateCameraNode(SceneNode* cameraNode, Camera* camera, GLFWwindow* window)
 	camera->update();
 }
 
+// TODO: make material and light as separate classes
+struct directionalLight_t {
+	glm::vec3 lightDirection;
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+};
+
+struct material_t {
+	glm::vec3 ambient;
+	glm::vec3 diffuse;
+	glm::vec3 specular;
+	float shines;
+};
+
+
 int main() {
 	stbi_set_flip_vertically_on_load(1);
 	glfwInit();
@@ -189,8 +205,23 @@ int main() {
 	pipeline.bind();
 
 	fragmentProgram.setUniform("textureSampler", 0);
-	/// Test ambient light
-	fragmentProgram.setUniform("lightColor", glm::vec3(1.0f, 1.0f, 1.0f));
+	/// Test material
+	material_t material { .ambient = {1.0, 0.5, 0.3}, .diffuse = {1.0, 0.5, 0.3},
+						 .specular = {0.5, 0.5, 0.5}, .shines = 32 };
+	/// Test directional light
+	directionalLight_t dLight = { .lightDirection = {0.0, 0.0, 1.0}, .ambient = {0.2, 0.2, 0.2},
+		.diffuse = {1.0, 1.0, 1.0}, .specular = {1.0, 1.0, 1.0} };
+	// set material params
+	fragmentProgram.setUniform("material.ambient", material.ambient);
+	fragmentProgram.setUniform("material.diffuse", material.diffuse);
+	fragmentProgram.setUniform("material.specular", material.specular);
+	fragmentProgram.setUniform("material.shines", material.shines);
+	// set light params
+	fragmentProgram.setUniform("directionalLight.lightDirection", dLight.lightDirection);
+	fragmentProgram.setUniform("directionalLight.ambient", dLight.ambient);
+	fragmentProgram.setUniform("directionalLight.diffuse", dLight.diffuse);
+	fragmentProgram.setUniform("directionalLight.specular", dLight.specular);
+
 	/// Scene
 	Scene scene;
 	auto cameraNode = scene.getRootNode().createChild();
