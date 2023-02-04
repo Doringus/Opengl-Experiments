@@ -6,7 +6,6 @@ layout (location = 2) in vec3 normal;
 layout (location = 3) in vec3 fragmentPosition;
 
 layout (binding = 0) uniform sampler2D textureSampler;
-uniform vec3 cameraPosition;
 
 struct material_t {
     vec3 ambient;
@@ -34,10 +33,10 @@ uniform directionalLight_t directionalLight;
 
 struct pointLight_t {
     vec3 position;
-    baseLight_t baseLight;
     float constant;
     float linear;
     float exponent;
+    baseLight_t baseLight;
 };
 
 uniform pointLight_t pointLight;
@@ -62,12 +61,11 @@ vec4 calculateLightBase(vec3 lightDirection, baseLight_t baseLight) {
 
 void main() {
     /// for directional light
-     color = calculateLightBase(directionalLight.direction, directionalLight.baseLight);
+  //   color = calculateLightBase(directionalLight.direction, directionalLight.baseLight);
     /// for point light
-  //  vec3 lightDirection = pointLight.position - position;
-  //  vec4 pointLightColor = calculateLightBase(normalize(lightDirection), pointLight.baseLight);
-   // float dist = length(lightDirection);
-   // float attenuation = pointLight.constant + pointLight.linear * dist + pointLight.exponent * dist * dist;
-    //color = pointLightColor / attenuation;
-   // color = pointLightColor;
+    vec3 lightDirection = pointLight.position - fragmentPosition;
+    vec4 pointLightColor = calculateLightBase(lightDirection, pointLight.baseLight);
+    float dist = length(lightDirection);
+    float attenuation = pointLight.constant + pointLight.linear * dist + pointLight.exponent * dist * dist;
+    color = pointLightColor / attenuation;
 }

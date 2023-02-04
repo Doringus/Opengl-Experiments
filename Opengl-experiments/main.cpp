@@ -233,23 +233,23 @@ int main() {
 	.ambientIntensity = 0.1f, .diffuseIntensity = 0.5f, .specularIntensity = 1.0f };
 	// set material params
 	// set light params
-	fragmentProgram.setUniform("directionalLight.direction", dLight.direction);
-	fragmentProgram.setUniform("directionalLight.baseLight.color", dLight.color);
-	fragmentProgram.setUniform("directionalLight.baseLight.ambientIntensity", dLight.ambientIntensity);
-	fragmentProgram.setUniform("directionalLight.baseLight.diffuseIntensity", dLight.diffuseIntensity);
-	fragmentProgram.setUniform("directionalLight.baseLight.specularIntensity", dLight.specularIntensity);
+//	fragmentProgram.setUniform("directionalLight.direction", dLight.direction);
+//	fragmentProgram.setUniform("directionalLight.baseLight.color", dLight.color);
+//	fragmentProgram.setUniform("directionalLight.baseLight.ambientIntensity", dLight.ambientIntensity);
+//	fragmentProgram.setUniform("directionalLight.baseLight.diffuseIntensity", dLight.diffuseIntensity);
+//	fragmentProgram.setUniform("directionalLight.baseLight.specularIntensity", dLight.specularIntensity);
 
 	/// Test point light
-//	pointLight_t pointLight = { .position = {0.0f, 0.0f, 3.0f}, .color = {0.0f, 1.0f, 0.0f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.5f,
-//							   .specularIntensity = 1.f, .constant = 1, .linear = 0.7f, .exponent = 1.8 };
-//	fragmentProgram.setUniform("pointLight.position", pointLight.position);
-///	fragmentProgram.setUniform("pointLight.baseLight.color", pointLight.color);
-//	fragmentProgram.setUniform("pointLight.baseLight.ambientIntensity", pointLight.ambientIntensity);
-//	fragmentProgram.setUniform("pointLight.baseLight.diffuseIntensity", pointLight.diffuseIntensity);
-//	fragmentProgram.setUniform("pointLight.baseLight.specularIntensity", pointLight.specularIntensity);
-//	fragmentProgram.setUniform("pointLight.constant", pointLight.constant);
-//	fragmentProgram.setUniform("pointLight.linear", pointLight.linear);
-//	fragmentProgram.setUniform("pointLight.exponent", pointLight.exponent);
+	pointLight_t pointLight = { .position = {0.0f, 0.0f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.5f,
+							   .specularIntensity = 1.f, .constant = 1, .linear = 0.7f, .exponent = 1.8f };
+	fragmentProgram.setUniform("pointLight.position", pointLight.position);
+	fragmentProgram.setUniform("pointLight.baseLight.color", pointLight.color);
+	fragmentProgram.setUniform("pointLight.baseLight.ambientIntensity", pointLight.ambientIntensity);
+	fragmentProgram.setUniform("pointLight.baseLight.diffuseIntensity", pointLight.diffuseIntensity);
+	fragmentProgram.setUniform("pointLight.baseLight.specularIntensity", pointLight.specularIntensity);
+	fragmentProgram.setUniform("pointLight.constant", pointLight.constant);
+	fragmentProgram.setUniform("pointLight.linear", pointLight.linear);
+	fragmentProgram.setUniform("pointLight.exponent", pointLight.exponent);
 
 	/// Scene
 	Scene scene;
@@ -277,7 +277,6 @@ int main() {
 		vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
 		vertexProgram.setUniform(std::string("MVP"), camera->calculateCameraMatrix() * glm::mat4(1.0f));
 		vertexProgram.setUniform(std::string("modelViewMatrix"), modelViewMatrix);
-//		fragmentProgram.setUniform(std::string("cameraPosition"), cameraNode->getTransform().worldPosition);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		glfwSwapBuffers(window);
 	}
