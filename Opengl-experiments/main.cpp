@@ -63,7 +63,7 @@ void callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei le
 		default: return "UNKNOWN";
 		}
 	}();
-	spdlog::info("{0} | {1} ({2})", severity_str, type_str, message);
+	spdlog::info("{0} | {1} | {2}:  ({3})", severity_str, type_str, source_str, message);
 }
 
 /// TODO: add frame time
@@ -106,16 +106,18 @@ void updateCameraNode(SceneNode* cameraNode, Camera* camera, GLFWwindow* window)
 
 // TODO: make material and light as separate classes
 struct directionalLight_t {
-	glm::vec3 lightDirection;
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
+	glm::vec3 direction;
+	glm::vec3 color;
+	float ambientIntensity;
+	float diffuseIntensity;
+	float specularIntensity;
 };
 
 struct material_t {
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
 	glm::vec3 specular;
+	glm::vec3 emission;
 	float shines;
 };
 
@@ -135,6 +137,7 @@ int main() {
 		spdlog::critical("Cannot init glew");
 	}
 	glewExperimental = GL_TRUE;
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glViewport(0, 0, 640, 480);
 
 	struct vertex_t {
@@ -204,23 +207,25 @@ int main() {
 	pipeline.useProgramStage(GL_FRAGMENT_SHADER_BIT, fragmentProgram);
 	pipeline.bind();
 
-	fragmentProgram.setUniform("textureSampler", 0);
+//	fragmentProgram.setUniform("textureSampler", 0);
 	/// Test material
-	material_t material { .ambient = {1.0, 0.5, 0.3}, .diffuse = {1.0, 0.5, 0.3},
-						 .specular = {0.5, 0.5, 0.5}, .shines = 32 };
+	material_t material { .ambient = {1.0f, 0.5f, 0.3f}, .diffuse = {1.0f, 0.5f, 0.3f},
+						  .specular = {0.5f, 0.5f, 0.5f}, .emission = {0.3f, 0.3f, 0.3f}, .shines = 32.f };
 	/// Test directional light
-	directionalLight_t dLight = { .lightDirection = {0.0, 0.0, 1.0}, .ambient = {0.2, 0.2, 0.2},
-		.diffuse = {1.0, 1.0, 1.0}, .specular = {1.0, 1.0, 1.0} };
+	directionalLight_t dLight = { .direction = {0.0f, 0.0f, 1.0f}, .color = {1.0f, 0.0f, 0.0f},
+		.ambientIntensity = 0.1f, .diffuseIntensity = 0.5f, .specularIntensity = 1.0f };
 	// set material params
 	fragmentProgram.setUniform("material.ambient", material.ambient);
 	fragmentProgram.setUniform("material.diffuse", material.diffuse);
 	fragmentProgram.setUniform("material.specular", material.specular);
+	fragmentProgram.setUniform("material.emission", material.emission);
 	fragmentProgram.setUniform("material.shines", material.shines);
 	// set light params
-	fragmentProgram.setUniform("directionalLight.lightDirection", dLight.lightDirection);
-	fragmentProgram.setUniform("directionalLight.ambient", dLight.ambient);
-	fragmentProgram.setUniform("directionalLight.diffuse", dLight.diffuse);
-	fragmentProgram.setUniform("directionalLight.specular", dLight.specular);
+	fragmentProgram.setUniform("directionalLight.direction", dLight.direction);
+	fragmentProgram.setUniform("directionalLight.color", dLight.color);
+	fragmentProgram.setUniform("directionalLight.ambientIntensity", dLight.ambientIntensity);
+	fragmentProgram.setUniform("directionalLight.diffuseIntensity", dLight.diffuseIntensity);
+	fragmentProgram.setUniform("directionalLight.specularIntensity", dLight.specularIntensity);
 
 	/// Scene
 	Scene scene;
@@ -248,7 +253,7 @@ int main() {
 		vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
 		vertexProgram.setUniform(std::string("MVP"), camera->calculateCameraMatrix() * glm::mat4(1.0f));
 		vertexProgram.setUniform(std::string("modelViewMatrix"), modelViewMatrix);
-		fragmentProgram.setUniform(std::string("cameraPosition"), cameraNode->getTransform().worldPosition);
+//		fragmentProgram.setUniform(std::string("cameraPosition"), cameraNode->getTransform().worldPosition);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 		glfwSwapBuffers(window);
 	}

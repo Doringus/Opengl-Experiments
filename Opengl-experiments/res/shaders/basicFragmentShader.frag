@@ -12,17 +12,18 @@ struct material_t {
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+    vec3 emission;
     float shines;
 };
 
 uniform material_t material;
 
 struct directionalLight_t {
-    vec3 lightDirection;
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-
+    vec3 direction;
+    vec3 color;
+    float ambientIntensity;
+    float diffuseIntensity;
+    float specularIntensity;
 };
 
 uniform directionalLight_t directionalLight;
@@ -30,21 +31,21 @@ uniform directionalLight_t directionalLight;
 out vec4 color;
 
 void main() {
-    vec3 invLightDirection = directionalLight.lightDirection;
+    vec3 invLightDirection = -directionalLight.direction;
     /// Calculate directional light
     // ambient
-    vec3 ambient = directionalLight.ambient * material.ambient;
+    vec3 ambient = material.ambient * directionalLight.color * directionalLight.ambientIntensity;
     // diffuse
     float nDotL = max(dot(normal, invLightDirection), 0.0);
-    vec3 diffuse = directionalLight.diffuse * material.diffuse * nDotL;
-    // specular
-   // vec3 specular = lSpecular * mSpecular * pow(max(dot())) 
+    vec3 diffuse = directionalLight.color * directionalLight.diffuseIntensity * material.diffuse * nDotL;
+    // specular 
     vec3 viewDirection = normalize(cameraPosition - position);
     vec3 reflectDirection = reflect(invLightDirection, normal);
-    float spec = pow(max(dot(viewDirection, reflectDirection), 0.0), material.shines);
-    vec3 specular = directionalLight.specular * material.specular * spec;
-    vec3 resultColor = diffuse + ambient + specular;
+    vec3 specular = vec3(1.0);
+    float vDotR = max(dot(viewDirection, reflectDirection), 0.0);
+    specular = directionalLight.color * directionalLight.specularIntensity * material.specular * pow(vDotR, material.shines);
+    vec3 resultColor = ambient + diffuse + specular + material.emission;
     
    // color = texture(textureSampler, textureCoord) * vec4(resultColor, 1.0f);
-   color = vec4(resultColor, 1.0);
+    color = vec4(resultColor, 1.0);
 }
