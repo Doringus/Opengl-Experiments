@@ -113,6 +113,18 @@ struct directionalLight_t {
 	float specularIntensity;
 };
 
+struct pointLight_t {
+	glm::vec3 position;
+	glm::vec3 color;
+	float ambientIntensity;
+	float diffuseIntensity;
+	float specularIntensity;
+	float constant;
+	float linear;
+	float exponent;
+};
+
+
 struct material_t {
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
@@ -209,23 +221,35 @@ int main() {
 
 //	fragmentProgram.setUniform("textureSampler", 0);
 	/// Test material
-	material_t material { .ambient = {1.0f, 0.5f, 0.3f}, .diffuse = {1.0f, 0.5f, 0.3f},
-						  .specular = {0.5f, 0.5f, 0.5f}, .emission = {0.3f, 0.3f, 0.3f}, .shines = 32.f };
-	/// Test directional light
-	directionalLight_t dLight = { .direction = {0.0f, 0.0f, 1.0f}, .color = {1.0f, 0.0f, 0.0f},
-		.ambientIntensity = 0.1f, .diffuseIntensity = 0.5f, .specularIntensity = 1.0f };
-	// set material params
+	material_t material { .ambient = {0.3f, 0.3f, 0.3f}, .diffuse = {0.3f, 0.3f, 0.3f},
+						  .specular = {0.5f, 0.5f, 0.5f}, .emission = {0.0f, 0.0f, 0.3f}, .shines = 32.f };
 	fragmentProgram.setUniform("material.ambient", material.ambient);
 	fragmentProgram.setUniform("material.diffuse", material.diffuse);
 	fragmentProgram.setUniform("material.specular", material.specular);
 	fragmentProgram.setUniform("material.emission", material.emission);
 	fragmentProgram.setUniform("material.shines", material.shines);
+	/// Test directional light
+	directionalLight_t dLight = { .direction = {0.0f, 0.2f, 1.0f}, .color = {1.0f, 0.0f, 0.0f},	
+	.ambientIntensity = 0.1f, .diffuseIntensity = 0.5f, .specularIntensity = 1.0f };
+	// set material params
 	// set light params
 	fragmentProgram.setUniform("directionalLight.direction", dLight.direction);
-	fragmentProgram.setUniform("directionalLight.color", dLight.color);
-	fragmentProgram.setUniform("directionalLight.ambientIntensity", dLight.ambientIntensity);
-	fragmentProgram.setUniform("directionalLight.diffuseIntensity", dLight.diffuseIntensity);
-	fragmentProgram.setUniform("directionalLight.specularIntensity", dLight.specularIntensity);
+	fragmentProgram.setUniform("directionalLight.baseLight.color", dLight.color);
+	fragmentProgram.setUniform("directionalLight.baseLight.ambientIntensity", dLight.ambientIntensity);
+	fragmentProgram.setUniform("directionalLight.baseLight.diffuseIntensity", dLight.diffuseIntensity);
+	fragmentProgram.setUniform("directionalLight.baseLight.specularIntensity", dLight.specularIntensity);
+
+	/// Test point light
+//	pointLight_t pointLight = { .position = {0.0f, 0.0f, 3.0f}, .color = {0.0f, 1.0f, 0.0f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.5f,
+//							   .specularIntensity = 1.f, .constant = 1, .linear = 0.7f, .exponent = 1.8 };
+//	fragmentProgram.setUniform("pointLight.position", pointLight.position);
+///	fragmentProgram.setUniform("pointLight.baseLight.color", pointLight.color);
+//	fragmentProgram.setUniform("pointLight.baseLight.ambientIntensity", pointLight.ambientIntensity);
+//	fragmentProgram.setUniform("pointLight.baseLight.diffuseIntensity", pointLight.diffuseIntensity);
+//	fragmentProgram.setUniform("pointLight.baseLight.specularIntensity", pointLight.specularIntensity);
+//	fragmentProgram.setUniform("pointLight.constant", pointLight.constant);
+//	fragmentProgram.setUniform("pointLight.linear", pointLight.linear);
+//	fragmentProgram.setUniform("pointLight.exponent", pointLight.exponent);
 
 	/// Scene
 	Scene scene;
