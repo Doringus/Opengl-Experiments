@@ -41,6 +41,14 @@ struct pointLight_t {
 
 uniform pointLight_t pointLight;
 
+struct spotLight_t {
+    vec3 direction;
+    float cutOffCos;
+    pointLight_t point;
+};
+
+uniform spotLight_t spotLight;
+
 out vec4 color;
 
 vec4 calculateLightBase(vec3 lightDirection, baseLight_t baseLight) {
@@ -61,11 +69,23 @@ vec4 calculateLightBase(vec3 lightDirection, baseLight_t baseLight) {
 
 void main() {
     /// for directional light
-  //   color = calculateLightBase(directionalLight.direction, directionalLight.baseLight);
+    //  color = calculateLightBase(directionalLight.direction, directionalLight.baseLight);
     /// for point light
-    vec3 lightDirection = pointLight.position - fragmentPosition;
-    vec4 pointLightColor = calculateLightBase(lightDirection, pointLight.baseLight);
+    //vec3 lightDirection = pointLight.position - fragmentPosition;
+    //vec4 pointLightColor = calculateLightBase(lightDirection, pointLight.baseLight);
+    //float dist = length(lightDirection);
+    //float attenuation = pointLight.constant + pointLight.linear * dist + pointLight.exponent * dist * dist;
+    //color = pointLightColor / attenuation;
+    /// for spot light
+    vec4 spotLightColor = calculateLightBase(spotLight.direction, spotLight.point.baseLight);
+    vec3 lightDirection = normalize(spotLight.point.position - fragmentPosition);
     float dist = length(lightDirection);
-    float attenuation = pointLight.constant + pointLight.linear * dist + pointLight.exponent * dist * dist;
-    color = pointLightColor / attenuation;
+    float spotFactor = dot(-lightDirection, spotLight.direction);
+    if(spotFactor > spotLight.cutOffCos) {
+        vec4 spotLightColor = calculateLightBase(lightDirection, spotLight.point.baseLight);
+        float attenuation = spotLight.point.constant + spotLight.point.linear * dist + spotLight.point.exponent * dist * dist;
+        color = (spotLightColor * (1.0 - (1.0 - spotFactor) * 1.0 / (1.0 - spotLight.cutOffCos))) / attenuation;
+    } else {
+        color = vec4(material.emission, 1.0);
+    }
 }

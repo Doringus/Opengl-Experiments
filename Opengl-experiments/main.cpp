@@ -125,6 +125,12 @@ struct pointLight_t {
 };
 
 
+struct spotLight_t {
+	glm::vec3 direction;
+	float cutOffAngle;
+	pointLight_t point;
+};
+
 struct material_t {
 	glm::vec3 ambient;
 	glm::vec3 diffuse;
@@ -240,16 +246,33 @@ int main() {
 //	fragmentProgram.setUniform("directionalLight.baseLight.specularIntensity", dLight.specularIntensity);
 
 	/// Test point light
-	pointLight_t pointLight = { .position = {0.0f, 0.0f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.5f,
-							   .specularIntensity = 1.f, .constant = 1, .linear = 0.7f, .exponent = 1.8f };
-	fragmentProgram.setUniform("pointLight.position", pointLight.position);
-	fragmentProgram.setUniform("pointLight.baseLight.color", pointLight.color);
-	fragmentProgram.setUniform("pointLight.baseLight.ambientIntensity", pointLight.ambientIntensity);
-	fragmentProgram.setUniform("pointLight.baseLight.diffuseIntensity", pointLight.diffuseIntensity);
-	fragmentProgram.setUniform("pointLight.baseLight.specularIntensity", pointLight.specularIntensity);
-	fragmentProgram.setUniform("pointLight.constant", pointLight.constant);
-	fragmentProgram.setUniform("pointLight.linear", pointLight.linear);
-	fragmentProgram.setUniform("pointLight.exponent", pointLight.exponent);
+//	pointLight_t pointLight = { .position = {0.0f, 0.0f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.5f,
+//							   .specularIntensity = 1.f, .constant = 1, .linear = 0.7f, .exponent = 1.8f };
+//	fragmentProgram.setUniform("pointLight.position", pointLight.position);
+//	fragmentProgram.setUniform("pointLight.baseLight.color", pointLight.color);
+//	fragmentProgram.setUniform("pointLight.baseLight.ambientIntensity", pointLight.ambientIntensity);
+//	fragmentProgram.setUniform("pointLight.baseLight.diffuseIntensity", pointLight.diffuseIntensity);
+//	fragmentProgram.setUniform("pointLight.baseLight.specularIntensity", pointLight.specularIntensity);
+//	fragmentProgram.setUniform("pointLight.constant", pointLight.constant);
+//	fragmentProgram.setUniform("pointLight.linear", pointLight.linear);
+//	fragmentProgram.setUniform("pointLight.exponent", pointLight.exponent);
+
+	/// Test spot light
+	spotLight_t spotLight = { .direction = {0.0f, 0.0f, 1.0f}, .cutOffAngle = 45.0f,
+		.point = {.position = {0.0f, 0.0f, -1.0f}, .color = {0.8f, 1.0f, 0.2f}, .ambientIntensity = 0.5f, .diffuseIntensity = 0.8f,
+		.specularIntensity = 1.0f, .constant = 1, .linear = 0.7f, .exponent = 1.8f}
+	};
+	fragmentProgram.setUniform("spotLight.direction", spotLight.direction);
+	fragmentProgram.setUniform("spotLight.cutOffCos", glm::cos(glm::radians(spotLight.cutOffAngle)));
+	fragmentProgram.setUniform("spotLight.point.position", spotLight.point.position);
+	fragmentProgram.setUniform("spotLight.point.baseLight.color", spotLight.point.color);
+	fragmentProgram.setUniform("spotLight.point.baseLight.ambientIntensity", spotLight.point.ambientIntensity);
+	fragmentProgram.setUniform("spotLight.point.baseLight.diffuseIntensity", spotLight.point.diffuseIntensity);
+	fragmentProgram.setUniform("spotLight.point.baseLight.specularIntensity", spotLight.point.specularIntensity);
+	fragmentProgram.setUniform("spotLight.point.constant", spotLight.point.constant);
+	fragmentProgram.setUniform("spotLight.point.linear", spotLight.point.linear);
+	fragmentProgram.setUniform("spotLight.point.exponent", spotLight.point.exponent);
+
 
 	/// Scene
 	Scene scene;
@@ -274,6 +297,8 @@ int main() {
 		glm::mat4 modelViewMatrix = camera->getViewMatrix() * glm::mat4(1.0);
 		glm::mat3 modelViewMatrix3 = glm::mat3(modelViewMatrix);
 		glm::mat3 normalMatrix = glm::inverseTranspose(modelViewMatrix3);
+		fragmentProgram.setUniform("spotLight.direction", camera->getFrontVec());
+//		fragmentProgram.setUniform("spotLight.point.position", cameraNode->getTransform().worldPosition);
 		vertexProgram.setUniform(std::string("normalMatrix"), normalMatrix);
 		vertexProgram.setUniform(std::string("MVP"), camera->calculateCameraMatrix() * glm::mat4(1.0f));
 		vertexProgram.setUniform(std::string("modelViewMatrix"), modelViewMatrix);
