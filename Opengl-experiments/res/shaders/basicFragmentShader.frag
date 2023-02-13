@@ -1,9 +1,11 @@
 #version 450 core
 
-layout (location = 0) in vec3 inColor;
-layout (location = 1) in vec2 textureCoord;
-layout (location = 2) in vec3 normal;
-layout (location = 3) in vec3 fragmentPosition;
+in VS_OUT {
+    vec3 color;
+    vec3 normal;
+    vec3 fragmentPosition;
+    vec2 texCoord;
+} fs_in;
 
 layout (binding = 0) uniform sampler2D textureSampler;
 
@@ -53,12 +55,12 @@ out vec4 color;
 
 vec4 calculateLightBase(vec3 lightDirection, baseLight_t baseLight) {
     vec3 s = normalize(lightDirection);
-    vec3 viewDirection = normalize(-fragmentPosition);
-    vec3 reflectDirection = reflect(-s, normal);
+    vec3 viewDirection = normalize(-fs_in.fragmentPosition);
+    vec3 reflectDirection = reflect(-s, fs_in.normal);
     // ambient
     vec3 ambient = material.ambient * baseLight.color * baseLight.ambientIntensity;
     // diffuse
-    float diffuseComponent = max(dot(s, normal), 0.0);
+    float diffuseComponent = max(dot(s, fs_in.normal), 0.0);
     vec3 diffuse = baseLight.color * baseLight.diffuseIntensity * material.diffuse * diffuseComponent;
     // specular
     float specularComponent = pow(max(dot(reflectDirection, viewDirection), 0.0), material.shines);
@@ -78,7 +80,7 @@ void main() {
     //color = pointLightColor / attenuation;
     /// for spot light
     vec4 spotLightColor = calculateLightBase(spotLight.direction, spotLight.point.baseLight);
-    vec3 lightDirection = normalize(spotLight.point.position - fragmentPosition);
+    vec3 lightDirection = normalize(spotLight.point.position - fs_in.fragmentPosition);
     float dist = length(lightDirection);
     float spotFactor = dot(-lightDirection, spotLight.direction);
     if(spotFactor > spotLight.cutOffCos) {
