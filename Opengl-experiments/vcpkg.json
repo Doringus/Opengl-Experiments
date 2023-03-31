@@ -1,0 +1,10 @@
+{
+    "name": "opengl-experiments",
+    "dependencies": [
+        "glew",
+        "glfw3",
+        "spdlog",
+        "glm",
+        "stb"
+    ]
+}

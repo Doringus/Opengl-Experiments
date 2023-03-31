@@ -5,6 +5,9 @@ conanbuildinfo.txt
 conaninfo.txt
 graph_info.json
 
+#vcpkg
+vcpkg_installed
+
 #cmake build dir
 out
 

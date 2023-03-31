@@ -3,14 +3,13 @@
 project ("Opengl-experiments")
 
 
-#Conan
-set(CONAN_DISABLE_CHECK_COMPILER "true")
-include("conan_cmake/conanbuildinfo.cmake")
-conan_basic_setup()
-
+find_package(GLEW)
+find_package(glfw3)
+find_package(spdlog)
+find_package(glm)
+find_package(stb)
 
 #CXX
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -22,7 +21,9 @@ file(GLOB_RECURSE SRC "src/*.cpp")
 add_executable (Opengl-experiments ${HEADERS} ${SRC})
 
 #Link conan libs
-target_link_libraries(Opengl-experiments ${CONAN_LIBS})
+target_link_libraries(Opengl-experiments PRIVATE
+                      GLEW::GLEW glfw spdlog::spdlog spdlog::spdlog_header_only glm::glm)
+target_include_directories(Opengl-experiments PRIVATE ${Stb_INCLUDE_DIR})
 
 #Copy resources
 add_custom_command(TARGET Opengl-experiments PRE_BUILD
